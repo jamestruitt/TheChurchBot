@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Bot.Builder.Dialogs;
+using Microsoft.Bot.Builder.FormFlow;
+using TheChurchBot.Forms;
+using TheChurchBot.Models;
 
 namespace TheChurchBot.Dialogs
 {
@@ -11,6 +14,9 @@ namespace TheChurchBot.Dialogs
 
         private const string HelloOption = "Say Hello";
         private const string VerseOption = "Random Verse";
+        private const string PrayerRequestOption = "Prayer Request";
+        private const string SermonRequestOption =  "Sermon Archive";
+        private const string EventSignUpOption = "Event Sign Up";
 
         public Task StartAsync(IDialogContext context)
         {
@@ -30,7 +36,7 @@ namespace TheChurchBot.Dialogs
                 context,
                 this.OnOptionSelected,
                 // Present options to user
-                new List<string>() { VerseOption, HelloOption },
+                new List<string>() { VerseOption, PrayerRequestOption, SermonRequestOption, EventSignUpOption ,HelloOption },
                 String.Format("What would you like to do?"), "Not a valid option", 3);
         }
 
@@ -43,37 +49,33 @@ namespace TheChurchBot.Dialogs
 
                 switch (optionSelected)
                 {
+                    case EventSignUpOption:
+                        var eventSignUpForm = new FormDialog<EventSignUpModel>(
+                            new EventSignUpModel(),
+                            EventSignUpForm.BuildForm,
+                            FormOptions.PromptInStart,
+                            null);
 
-                    //case SocialServiceOption:
+                        context.Call(eventSignUpForm, this.EventSignUpFormCompleteAsync);
+                        break;
+                    case SermonRequestOption:
+                        var sermonRequestForm = new FormDialog<SermonRequestModel>(
+                            new SermonRequestModel(),
+                            SermonRequestForm.BuildForm,
+                            FormOptions.PromptInStart,
+                            null);
 
-                    //    var socialform = new FormDialog<SocialService>(
-                    //        new SocialService(),
-                    //        SocialServiceForm.BuildForm,
-                    //        FormOptions.PromptInStart,
-                    //        null);
+                        context.Call(sermonRequestForm, this.SermonRequestFormCompleteAsync);
+                        break;
+                    case PrayerRequestOption:
+                        var prayerRequestForm = new FormDialog<PrayerRequestModel>(
+                            new PrayerRequestModel(),
+                            PrayerRequestForm.BuildForm,
+                            FormOptions.PromptInStart,
+                            null);
 
-                    //    context.Call(socialform, this.SocialServiceFormCompleteAsync);
-                    //    break;
-                    //case HealthcareServiceOption:
-
-                    //    var healthcareForm = new FormDialog<HealthcareModel>(
-                    //        new HealthcareModel(),
-                    //        HealthcareServiceForm.BuildForm,
-                    //        FormOptions.PromptInStart,
-                    //        null);
-
-                    //    context.Call(healthcareForm, this.HealthcareServiceFormCompleteAsync);
-                    //    break;
-                    //case ChildcareServiceOption:
-
-                    //    var childcareForm = new FormDialog<ChildcareModel>(
-                    //        new ChildcareModel(),
-                    //        ChildcareServiceForm.BuildForm,
-                    //        FormOptions.PromptInStart,
-                    //        null);
-
-                    //    context.Call(childcareForm, this.ChildcareServiceFormCompleteAsync);
-                    //    break;
+                        context.Call(prayerRequestForm, this.PrayerRequestFormFormCompleteAsync);
+                        break;
                     case HelloOption:
                         context.Call(new HelloDialog(), this.ResumeAfterUserHelloDialog);
                         break;
@@ -92,6 +94,36 @@ namespace TheChurchBot.Dialogs
                 //This sets us in a waiting state, after running the prompt again. 
                 context.Wait(this.MessageReceivedAsync);
             }
+        }
+
+        private async Task EventSignUpFormCompleteAsync(IDialogContext context, IAwaitable<EventSignUpModel> result)
+        {
+            var eventRequestInfo = await result;
+
+            await context.PostAsync(
+                $"Thank you {eventRequestInfo.FirstName} for submitting a Event Request. See you at the event");
+
+            PromptUser(context);
+        }
+
+        private async Task SermonRequestFormCompleteAsync(IDialogContext context, IAwaitable<SermonRequestModel> result)
+        {
+            var sermonRequestInfo = await result;
+
+            await context.PostAsync(
+                $"Thank you {sermonRequestInfo.EmailAddress} for submitting a Sermon Request. Someone will be in contact for followup");
+
+            PromptUser(context);
+        }
+
+        private async Task PrayerRequestFormFormCompleteAsync(IDialogContext context, IAwaitable<PrayerRequestModel> result)
+        {
+            var prayerRequestInfo = await result;
+
+            await context.PostAsync(
+                $"Thank you {prayerRequestInfo.FirstName} for submitting a Prayer Request. Someone will be in contact for followup");
+
+            PromptUser(context);
         }
 
         private async Task ResumeAfterVerseDialog(IDialogContext context, IAwaitable<object> result)
